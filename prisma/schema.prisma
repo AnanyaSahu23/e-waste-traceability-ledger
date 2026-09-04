@@ -1,0 +1,185 @@
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+
+model User {
+  id           String   @id @default(uuid()) @db.Uuid
+  name         String
+  email        String   @unique
+  passwordHash String
+  phone        String   @unique
+  createdAt    DateTime @default(now())
+
+  devices        Device[]
+  ledgerEntries  LedgerEntry[]
+  verifications  Verification[]
+}
+
+
+model Device {
+  id              String   @id @default(uuid()) @db.Uuid
+  deviceType      String
+  ownerId         String   @db.Uuid
+  brand           String
+  model           String
+  serialNumber    String
+  manufactureYear Int
+  currentStatus   String
+  createdAt       DateTime @default(now())
+
+  owner User @relation(fields: [ownerId], references: [id])
+
+  ledgerEntries  LedgerEntry[]
+  pickupRequests PickupRequest[]
+}
+
+
+model Organization {
+  id            String   @id @default(uuid()) @db.Uuid
+  name          String
+  type          String
+  address       String
+  licenseNumber String
+  contactEmail  String
+  createdAt     DateTime @default(now())
+
+  outgoingLedgerEntries LedgerEntry[] @relation("FromOrganization")
+  incomingLedgerEntries LedgerEntry[] @relation("ToOrganization")
+
+  pickupRequests PickupRequest[]
+}
+
+
+model LedgerEntry {
+  id               String   @id @default(uuid()) @db.Uuid
+  deviceId         String   @db.Uuid
+  previousLedgerId  String?  @db.Uuid
+  action           String
+  fromOrganization String?  @db.Uuid
+  toOrganization   String?  @db.Uuid
+  performedBy      String   @db.Uuid
+  previousHash     String?
+  currentHash      String
+  remarks          String?
+  createdAt        DateTime @default(now())
+
+  device Device @relation(fields: [deviceId], references: [id])
+
+  // current ledger entry → previous ledger entry
+  previousLedger LedgerEntry? @relation(
+    "LedgerChain",
+    fields: [previousLedgerId],
+    references: [id]
+  )
+
+  nextLedgerEntries LedgerEntry[] @relation("LedgerChain")
+
+  // Organization from which the device came
+  fromOrg Organization? @relation(
+    "FromOrganization",
+    fields: [fromOrganization],
+    references: [id]
+  )
+
+  // Organization to which the device went
+  toOrg Organization? @relation(
+    "ToOrganization",
+    fields: [toOrganization],
+    references: [id]
+  )
+
+  // User who performed the action
+  performer User @relation(
+    fields: [performedBy],
+    references: [id]
+  )
+
+  materialRecoveries MaterialRecovery[]
+  disposalRecords    DisposalRecord[]
+}
+
+
+
+model Location {
+  id        String  @id @default(uuid()) @db.Uuid
+  city      String
+  state     String
+  latitude  Decimal
+  longitude Decimal
+}
+
+
+
+model MaterialRecovery {
+  id                String   @id @default(uuid()) @db.Uuid
+  ledgerId          String   @db.Uuid
+  material          String
+  quantity          Decimal
+  unitOfMeasurement String
+  recoveryDate      DateTime
+
+  ledger LedgerEntry @relation(
+    fields: [ledgerId],
+    references: [id]
+  )
+}
+
+
+
+model Verification {
+  id            String   @id @default(uuid()) @db.Uuid
+  verifiedBy    String   @db.Uuid
+  timestamp     DateTime @default(now())
+  result        String
+  brokenRecord  String?
+
+  verifier User @relation(
+    fields: [verifiedBy],
+    references: [id]
+  )
+}
+
+
+model DisposalRecord {
+  id            String   @id @default(uuid()) @db.Uuid
+  ledgerId      String   @db.Uuid
+  wasteType     String
+  disposalMethod String
+  disposalDate  DateTime
+
+  ledger LedgerEntry @relation(
+    fields: [ledgerId],
+    references: [id]
+  )
+}
+
+
+model DeviceCategory {
+  id   String @id @default(uuid()) @db.Uuid
+  name String @unique
+}
+
+
+model PickupRequest {
+  id         String   @id @default(uuid()) @db.Uuid
+  createdAt  DateTime @default(now())
+  pickupDate DateTime
+  deviceId   String   @db.Uuid
+  orgId      String   @db.Uuid
+
+  device Device @relation(
+    fields: [deviceId],
+    references: [id]
+  )
+
+  organization Organization @relation(
+    fields: [orgId],
+    references: [id]
+  )
+}
