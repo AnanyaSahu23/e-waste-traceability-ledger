@@ -1,12 +1,10 @@
 datasource db {
   provider = "postgresql"
-  url      = env("DATABASE_URL")
 }
 
 generator client {
   provider = "prisma-client-js"
 }
-
 
 // =====================================================
 // ENUMS
@@ -65,7 +63,6 @@ enum EventType {
   COMPLETED
 }
 
-
 // =====================================================
 // USER
 // =====================================================
@@ -88,13 +85,9 @@ model User {
   verifications Verification[]
 
   // Optional organization membership
-  organizationId String? @db.Uuid
-  organization   Organization? @relation(
-    fields: [organizationId],
-    references: [id]
-  )
+  organizationId String?       @db.Uuid
+  organization   Organization? @relation(fields: [organizationId], references: [id])
 }
-
 
 // =====================================================
 // ORGANIZATION
@@ -108,19 +101,16 @@ model Organization {
   contactEmail  String
   createdAt     DateTime         @default(now())
 
-  locations   Location[]
+  locations Location[]
 
   // Employees/users belonging to organization
   users User[]
 
   // Events performed by this organization
-  events Event[]
+  events Event[] @relation("EventOrganization")
 
   // Requests assigned to organization
   recyclingRequests RecyclingRequest[]
-
-  // Pickup requests handled by organization
-  pickupRequests PickupRequest[]
 
   // Events where this organization is sender
   outgoingEvents Event[] @relation("EventFromOrganization")
@@ -129,26 +119,23 @@ model Organization {
   incomingEvents Event[] @relation("EventToOrganization")
 }
 
-
 // =====================================================
 // LOCATION
 // =====================================================
 
 model Location {
-  id        String  @id @default(uuid()) @db.Uuid
-  city      String
-  state     String
-  address       String
-  latitude  Decimal @db.Decimal(10, 7)
-  longitude Decimal @db.Decimal(10, 7)
-  organizationId String @db.Uuid
+  id             String  @id @default(uuid()) @db.Uuid
+  city           String
+  state          String
+  address        String
+  latitude       Decimal @db.Decimal(10, 7)
+  longitude      Decimal @db.Decimal(10, 7)
+  organizationId String  @db.Uuid
 
-  organization Organization @relation(
-    fields: [organizationId],
-    references: [id]
-  )
+  organization Organization @relation(fields: [organizationId], references: [id])
+
+  @@index([organizationId])
 }
-
 
 // =====================================================
 // DEVICE CATEGORY
@@ -161,15 +148,14 @@ model DeviceCategory {
   devices Device[]
 }
 
-
 // =====================================================
 // DEVICE
 // =====================================================
 
 model Device {
-  id              String       @id @default(uuid()) @db.Uuid
-  categoryId      String       @db.Uuid
-  ownerId         String       @db.Uuid
+  id         String @id @default(uuid()) @db.Uuid
+  categoryId String @db.Uuid
+  ownerId    String @db.Uuid
 
   brand           String
   model           String
@@ -180,15 +166,9 @@ model Device {
 
   createdAt DateTime @default(now())
 
-  category DeviceCategory @relation(
-    fields: [categoryId],
-    references: [id]
-  )
+  category DeviceCategory @relation(fields: [categoryId], references: [id])
 
-  owner User @relation(
-    fields: [ownerId],
-    references: [id]
-  )
+  owner User @relation(fields: [ownerId], references: [id])
 
   // Recycling requests for this device
   recyclingRequests RecyclingRequest[]
@@ -207,7 +187,6 @@ model Device {
   @@index([currentStatus])
   @@index([serialNumber])
 }
-
 
 // =====================================================
 // RECYCLING REQUEST
@@ -228,15 +207,9 @@ model RecyclingRequest {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  device Device @relation(
-    fields: [deviceId],
-    references: [id]
-  )
+  device Device @relation(fields: [deviceId], references: [id])
 
-  organization Organization @relation(
-    fields: [organizationId],
-    references: [id]
-  )
+  organization Organization @relation(fields: [organizationId], references: [id])
 
   // Exists only when collection method = PICKUP
   pickupRequest PickupRequest?
@@ -245,7 +218,6 @@ model RecyclingRequest {
   @@index([organizationId])
   @@index([status])
 }
-
 
 // =====================================================
 // PICKUP REQUEST
@@ -265,19 +237,10 @@ model PickupRequest {
 
   createdAt DateTime @default(now())
 
-  recyclingRequest RecyclingRequest @relation(
-    fields: [recyclingRequestId],
-    references: [id]
-  )
-
-  organization Organization @relation(
-    fields: [],
-    references: []
-  )
+  recyclingRequest RecyclingRequest @relation(fields: [recyclingRequestId], references: [id])
 
   @@index([status])
 }
-
 
 // =====================================================
 // EVENT
@@ -304,32 +267,15 @@ model Event {
 
   createdAt DateTime @default(now())
 
-  device Device @relation(
-    fields: [deviceId],
-    references: [id]
-  )
+  device Device @relation(fields: [deviceId], references: [id])
 
-  performer User @relation(
-    fields: [performedBy],
-    references: [id]
-  )
+  performer User @relation(fields: [performedBy], references: [id])
 
-  organization Organization? @relation(
-    fields: [organizationId],
-    references: [id]
-  )
+  organization Organization? @relation("EventOrganization", fields: [organizationId], references: [id])
 
-  fromOrganization Organization? @relation(
-    "EventFromOrganization",
-    fields: [fromOrganizationId],
-    references: [id]
-  )
+  fromOrganization Organization? @relation("EventFromOrganization", fields: [fromOrganizationId], references: [id])
 
-  toOrganization Organization? @relation(
-    "EventToOrganization",
-    fields: [toOrganizationId],
-    references: [id]
-  )
+  toOrganization Organization? @relation("EventToOrganization", fields: [toOrganizationId], references: [id])
 
   // One event can have multiple recovered materials
   materialRecoveries MaterialRecovery[]
@@ -348,7 +294,6 @@ model Event {
   @@index([createdAt])
 }
 
-
 // =====================================================
 // MATERIAL
 // =====================================================
@@ -361,7 +306,6 @@ model Material {
   recoveries MaterialRecovery[]
 }
 
-
 // =====================================================
 // MATERIAL RECOVERY
 // =====================================================
@@ -369,7 +313,7 @@ model Material {
 model MaterialRecovery {
   id String @id @default(uuid()) @db.Uuid
 
-  eventId String @db.Uuid
+  eventId    String @db.Uuid
   materialId String @db.Uuid
 
   quantity Decimal @db.Decimal(10, 3)
@@ -378,20 +322,13 @@ model MaterialRecovery {
 
   createdAt DateTime @default(now())
 
-  event Event @relation(
-    fields: [eventId],
-    references: [id]
-  )
+  event Event @relation(fields: [eventId], references: [id])
 
-  material Material @relation(
-    fields: [materialId],
-    references: [id]
-  )
+  material Material @relation(fields: [materialId], references: [id])
 
   @@index([eventId])
   @@index([materialId])
 }
-
 
 // =====================================================
 // DISPOSAL RECORD
@@ -402,19 +339,15 @@ model DisposalRecord {
 
   eventId String @unique @db.Uuid
 
-  wasteType String
+  wasteType      String
   disposalMethod String
 
   disposalDate DateTime
 
-  event Event @relation(
-    fields: [eventId],
-    references: [id]
-  )
+  event Event @relation(fields: [eventId], references: [id])
 
   @@index([eventId])
 }
-
 
 // =====================================================
 // CRYPTOGRAPHIC LEDGER
@@ -433,32 +366,21 @@ model LedgerEntry {
   previousLedgerId String? @db.Uuid
 
   previousHash String?
-  currentHash String @unique
+  currentHash  String  @unique
 
   createdAt DateTime @default(now())
 
-  event Event @relation(
-    fields: [eventId],
-    references: [id]
-  )
+  event Event @relation(fields: [eventId], references: [id])
 
-  device Device @relation(
-    fields: [deviceId],
-    references: [id]
-  )
+  device Device @relation(fields: [deviceId], references: [id])
 
-  previousLedger LedgerEntry? @relation(
-    "LedgerChain",
-    fields: [previousLedgerId],
-    references: [id]
-  )
+  previousLedger LedgerEntry? @relation("LedgerChain", fields: [previousLedgerId], references: [id])
 
   nextLedgerEntries LedgerEntry[] @relation("LedgerChain")
 
   @@index([deviceId])
   @@index([previousLedgerId])
 }
-
 
 // =====================================================
 // VERIFICATION
@@ -467,7 +389,7 @@ model LedgerEntry {
 model Verification {
   id String @id @default(uuid()) @db.Uuid
 
-  deviceId String @db.Uuid
+  deviceId   String @db.Uuid
   verifiedBy String @db.Uuid
 
   timestamp DateTime @default(now())
@@ -477,15 +399,9 @@ model Verification {
   // Information about the broken record, if verification fails
   brokenRecord String?
 
-  device Device @relation(
-    fields: [deviceId],
-    references: [id]
-  )
+  device Device @relation(fields: [deviceId], references: [id])
 
-  verifier User @relation(
-    fields: [verifiedBy],
-    references: [id]
-  )
+  verifier User @relation(fields: [verifiedBy], references: [id])
 
   @@index([deviceId])
   @@index([verifiedBy])
