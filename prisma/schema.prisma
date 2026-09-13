@@ -104,17 +104,11 @@ model Organization {
   id            String           @id @default(uuid()) @db.Uuid
   name          String
   type          OrganizationType
-  address       String
   licenseNumber String
   contactEmail  String
   createdAt     DateTime         @default(now())
 
-  // Physical location
-  locationId String? @db.Uuid
-  location   Location? @relation(
-    fields: [locationId],
-    references: [id]
-  )
+  locations   Location[]
 
   // Employees/users belonging to organization
   users User[]
@@ -144,10 +138,15 @@ model Location {
   id        String  @id @default(uuid()) @db.Uuid
   city      String
   state     String
+  address       String
   latitude  Decimal @db.Decimal(10, 7)
   longitude Decimal @db.Decimal(10, 7)
+  organizationId String @db.Uuid
 
-  organizations Organization[]
+  organization Organization @relation(
+    fields: [organizationId],
+    references: [id]
+  )
 }
 
 
