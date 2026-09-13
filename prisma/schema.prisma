@@ -8,70 +8,446 @@ generator client {
 }
 
 
+// =====================================================
+// ENUMS
+// =====================================================
+
+enum OrganizationType {
+  COLLECTION_CENTER
+  TRANSPORT_COMPANY
+  RECYCLING_FACILITY
+}
+
+enum DeviceStatus {
+  REGISTERED
+  AWAITING_COLLECTION
+  COLLECTED
+  IN_TRANSIT
+  RECEIVED
+  UNDER_INSPECTION
+  MATERIAL_RECOVERY
+  DISPOSED
+  COMPLETED
+}
+
+enum CollectionMethod {
+  PICKUP
+  DROP_OFF
+}
+
+enum RecyclingRequestStatus {
+  PENDING
+  ACCEPTED
+  SCHEDULED
+  COLLECTED
+  IN_PROGRESS
+  COMPLETED
+  CANCELLED
+  REJECTED
+}
+
+enum PickupStatus {
+  PENDING
+  ACCEPTED
+  REJECTED
+  COMPLETED
+  CANCELLED
+}
+
+enum EventType {
+  REGISTERED
+  COLLECTED
+  IN_TRANSIT
+  RECEIVED
+  INSPECTED
+  MATERIAL_RECOVERY
+  DISPOSAL
+  COMPLETED
+}
+
+
+// =====================================================
+// USER
+// =====================================================
+
 model User {
   id           String   @id @default(uuid()) @db.Uuid
   name         String
   email        String   @unique
   passwordHash String
-  phone        String   @unique
+  phone        String?
   createdAt    DateTime @default(now())
 
-  devices        Device[]
-  ledgerEntries  LedgerEntry[]
-  verifications  Verification[]
+  // User's devices
+  devices Device[]
+
+  // Events performed by this user
+  events Event[]
+
+  // Ledger verification records
+  verifications Verification[]
+
+  // Optional organization membership
+  organizationId String? @db.Uuid
+  organization   Organization? @relation(
+    fields: [organizationId],
+    references: [id]
+  )
 }
 
 
-model Device {
-  id              String   @id @default(uuid()) @db.Uuid
-  deviceType      String
-  ownerId         String   @db.Uuid
-  brand           String
-  model           String
-  serialNumber    String
-  manufactureYear Int
-  currentStatus   String
-  createdAt       DateTime @default(now())
-
-  owner User @relation(fields: [ownerId], references: [id])
-
-  ledgerEntries  LedgerEntry[]
-  pickupRequests PickupRequest[]
-}
-
+// =====================================================
+// ORGANIZATION
+// =====================================================
 
 model Organization {
-  id            String   @id @default(uuid()) @db.Uuid
+  id            String           @id @default(uuid()) @db.Uuid
   name          String
-  type          String
+  type          OrganizationType
   address       String
   licenseNumber String
   contactEmail  String
-  createdAt     DateTime @default(now())
+  createdAt     DateTime         @default(now())
 
-  outgoingLedgerEntries LedgerEntry[] @relation("FromOrganization")
-  incomingLedgerEntries LedgerEntry[] @relation("ToOrganization")
+  // Physical location
+  locationId String? @db.Uuid
+  location   Location? @relation(
+    fields: [locationId],
+    references: [id]
+  )
 
+  // Employees/users belonging to organization
+  users User[]
+
+  // Events performed by this organization
+  events Event[]
+
+  // Requests assigned to organization
+  recyclingRequests RecyclingRequest[]
+
+  // Pickup requests handled by organization
   pickupRequests PickupRequest[]
+
+  // Events where this organization is sender
+  outgoingEvents Event[] @relation("EventFromOrganization")
+
+  // Events where this organization is receiver
+  incomingEvents Event[] @relation("EventToOrganization")
 }
 
 
+// =====================================================
+// LOCATION
+// =====================================================
+
+model Location {
+  id        String  @id @default(uuid()) @db.Uuid
+  city      String
+  state     String
+  latitude  Decimal @db.Decimal(10, 7)
+  longitude Decimal @db.Decimal(10, 7)
+
+  organizations Organization[]
+}
+
+
+// =====================================================
+// DEVICE CATEGORY
+// =====================================================
+
+model DeviceCategory {
+  id   String @id @default(uuid()) @db.Uuid
+  name String @unique
+
+  devices Device[]
+}
+
+
+// =====================================================
+// DEVICE
+// =====================================================
+
+model Device {
+  id              String       @id @default(uuid()) @db.Uuid
+  categoryId      String       @db.Uuid
+  ownerId         String       @db.Uuid
+
+  brand           String
+  model           String
+  serialNumber    String?
+  manufactureYear Int?
+
+  currentStatus DeviceStatus @default(REGISTERED)
+
+  createdAt DateTime @default(now())
+
+  category DeviceCategory @relation(
+    fields: [categoryId],
+    references: [id]
+  )
+
+  owner User @relation(
+    fields: [ownerId],
+    references: [id]
+  )
+
+  // Recycling requests for this device
+  recyclingRequests RecyclingRequest[]
+
+  // Lifecycle events
+  events Event[]
+
+  // Ledger chain for this device
+  ledgerEntries LedgerEntry[]
+
+  // Verification records
+  verifications Verification[]
+
+  @@index([ownerId])
+  @@index([categoryId])
+  @@index([currentStatus])
+  @@index([serialNumber])
+}
+
+
+// =====================================================
+// RECYCLING REQUEST
+// =====================================================
+
+model RecyclingRequest {
+  id String @id @default(uuid()) @db.Uuid
+
+  deviceId String @db.Uuid
+
+  // Organization selected by the user
+  organizationId String @db.Uuid
+
+  collectionMethod CollectionMethod
+
+  status RecyclingRequestStatus @default(PENDING)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  device Device @relation(
+    fields: [deviceId],
+    references: [id]
+  )
+
+  organization Organization @relation(
+    fields: [organizationId],
+    references: [id]
+  )
+
+  // Exists only when collection method = PICKUP
+  pickupRequest PickupRequest?
+
+  @@index([deviceId])
+  @@index([organizationId])
+  @@index([status])
+}
+
+
+// =====================================================
+// PICKUP REQUEST
+// =====================================================
+
+model PickupRequest {
+  id String @id @default(uuid()) @db.Uuid
+
+  recyclingRequestId String @unique @db.Uuid
+
+  pickupAddress String
+
+  requestedDate DateTime
+  scheduledDate DateTime?
+
+  status PickupStatus @default(PENDING)
+
+  createdAt DateTime @default(now())
+
+  recyclingRequest RecyclingRequest @relation(
+    fields: [recyclingRequestId],
+    references: [id]
+  )
+
+  organization Organization @relation(
+    fields: [],
+    references: []
+  )
+
+  @@index([status])
+}
+
+
+// =====================================================
+// EVENT
+// =====================================================
+
+model Event {
+  id String @id @default(uuid()) @db.Uuid
+
+  deviceId String @db.Uuid
+
+  eventType EventType
+
+  // User who performed/recorded the event
+  performedBy String @db.Uuid
+
+  // Organization responsible for the event
+  organizationId String? @db.Uuid
+
+  // Used for transfers such as IN_TRANSIT
+  fromOrganizationId String? @db.Uuid
+  toOrganizationId   String? @db.Uuid
+
+  remarks String?
+
+  createdAt DateTime @default(now())
+
+  device Device @relation(
+    fields: [deviceId],
+    references: [id]
+  )
+
+  performer User @relation(
+    fields: [performedBy],
+    references: [id]
+  )
+
+  organization Organization? @relation(
+    fields: [organizationId],
+    references: [id]
+  )
+
+  fromOrganization Organization? @relation(
+    "EventFromOrganization",
+    fields: [fromOrganizationId],
+    references: [id]
+  )
+
+  toOrganization Organization? @relation(
+    "EventToOrganization",
+    fields: [toOrganizationId],
+    references: [id]
+  )
+
+  // One event can have multiple recovered materials
+  materialRecoveries MaterialRecovery[]
+
+  // Disposal event has one disposal record
+  disposalRecord DisposalRecord?
+
+  // Every event gets exactly one ledger entry
+  ledgerEntry LedgerEntry?
+
+  @@index([deviceId])
+  @@index([eventType])
+  @@index([organizationId])
+  @@index([fromOrganizationId])
+  @@index([toOrganizationId])
+  @@index([createdAt])
+}
+
+
+// =====================================================
+// MATERIAL
+// =====================================================
+
+model Material {
+  id String @id @default(uuid()) @db.Uuid
+
+  name String @unique
+
+  recoveries MaterialRecovery[]
+}
+
+
+// =====================================================
+// MATERIAL RECOVERY
+// =====================================================
+
+model MaterialRecovery {
+  id String @id @default(uuid()) @db.Uuid
+
+  eventId String @db.Uuid
+  materialId String @db.Uuid
+
+  quantity Decimal @db.Decimal(10, 3)
+
+  unit String
+
+  createdAt DateTime @default(now())
+
+  event Event @relation(
+    fields: [eventId],
+    references: [id]
+  )
+
+  material Material @relation(
+    fields: [materialId],
+    references: [id]
+  )
+
+  @@index([eventId])
+  @@index([materialId])
+}
+
+
+// =====================================================
+// DISPOSAL RECORD
+// =====================================================
+
+model DisposalRecord {
+  id String @id @default(uuid()) @db.Uuid
+
+  eventId String @unique @db.Uuid
+
+  wasteType String
+  disposalMethod String
+
+  disposalDate DateTime
+
+  event Event @relation(
+    fields: [eventId],
+    references: [id]
+  )
+
+  @@index([eventId])
+}
+
+
+// =====================================================
+// CRYPTOGRAPHIC LEDGER
+// =====================================================
+
 model LedgerEntry {
-  id               String   @id @default(uuid()) @db.Uuid
-  deviceId         String   @db.Uuid
-  previousLedgerId  String?  @db.Uuid
-  action           String
-  fromOrganization String?  @db.Uuid
-  toOrganization   String?  @db.Uuid
-  performedBy      String   @db.Uuid
-  previousHash     String?
-  currentHash      String
-  remarks          String?
-  createdAt        DateTime @default(now())
+  id String @id @default(uuid()) @db.Uuid
 
-  device Device @relation(fields: [deviceId], references: [id])
+  // One ledger entry belongs to exactly one event
+  eventId String @unique @db.Uuid
 
-  // current ledger entry → previous ledger entry
+  // Device this chain belongs to
+  deviceId String @db.Uuid
+
+  // Previous entry in THIS DEVICE'S chain
+  previousLedgerId String? @db.Uuid
+
+  previousHash String?
+  currentHash String @unique
+
+  createdAt DateTime @default(now())
+
+  event Event @relation(
+    fields: [eventId],
+    references: [id]
+  )
+
+  device Device @relation(
+    fields: [deviceId],
+    references: [id]
+  )
+
   previousLedger LedgerEntry? @relation(
     "LedgerChain",
     fields: [previousLedgerId],
@@ -80,106 +456,39 @@ model LedgerEntry {
 
   nextLedgerEntries LedgerEntry[] @relation("LedgerChain")
 
-  // Organization from which the device came
-  fromOrg Organization? @relation(
-    "FromOrganization",
-    fields: [fromOrganization],
-    references: [id]
-  )
-
-  // Organization to which the device went
-  toOrg Organization? @relation(
-    "ToOrganization",
-    fields: [toOrganization],
-    references: [id]
-  )
-
-  // User who performed the action
-  performer User @relation(
-    fields: [performedBy],
-    references: [id]
-  )
-
-  materialRecoveries MaterialRecovery[]
-  disposalRecords    DisposalRecord[]
+  @@index([deviceId])
+  @@index([previousLedgerId])
 }
 
 
-
-model Location {
-  id        String  @id @default(uuid()) @db.Uuid
-  city      String
-  state     String
-  latitude  Decimal
-  longitude Decimal
-}
-
-
-
-model MaterialRecovery {
-  id                String   @id @default(uuid()) @db.Uuid
-  ledgerId          String   @db.Uuid
-  material          String
-  quantity          Decimal
-  unitOfMeasurement String
-  recoveryDate      DateTime
-
-  ledger LedgerEntry @relation(
-    fields: [ledgerId],
-    references: [id]
-  )
-}
-
-
+// =====================================================
+// VERIFICATION
+// =====================================================
 
 model Verification {
-  id            String   @id @default(uuid()) @db.Uuid
-  verifiedBy    String   @db.Uuid
-  timestamp     DateTime @default(now())
-  result        String
-  brokenRecord  String?
+  id String @id @default(uuid()) @db.Uuid
 
-  verifier User @relation(
-    fields: [verifiedBy],
-    references: [id]
-  )
-}
+  deviceId String @db.Uuid
+  verifiedBy String @db.Uuid
 
+  timestamp DateTime @default(now())
 
-model DisposalRecord {
-  id            String   @id @default(uuid()) @db.Uuid
-  ledgerId      String   @db.Uuid
-  wasteType     String
-  disposalMethod String
-  disposalDate  DateTime
+  result String
 
-  ledger LedgerEntry @relation(
-    fields: [ledgerId],
-    references: [id]
-  )
-}
-
-
-model DeviceCategory {
-  id   String @id @default(uuid()) @db.Uuid
-  name String @unique
-}
-
-
-model PickupRequest {
-  id         String   @id @default(uuid()) @db.Uuid
-  createdAt  DateTime @default(now())
-  pickupDate DateTime
-  deviceId   String   @db.Uuid
-  orgId      String   @db.Uuid
+  // Information about the broken record, if verification fails
+  brokenRecord String?
 
   device Device @relation(
     fields: [deviceId],
     references: [id]
   )
 
-  organization Organization @relation(
-    fields: [orgId],
+  verifier User @relation(
+    fields: [verifiedBy],
     references: [id]
   )
+
+  @@index([deviceId])
+  @@index([verifiedBy])
+  @@index([timestamp])
 }
