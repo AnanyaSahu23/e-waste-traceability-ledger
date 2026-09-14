@@ -1,5 +1,6 @@
 {
   "devDependencies": {
+    "@types/node": "^26.5.1",
     "prisma": "^7.10.0"
   },
   "dependencies": {
