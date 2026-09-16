@@ -3,7 +3,15 @@
     "@types/node": "^26.5.1",
     "prisma": "^7.10.0"
   },
+  
+  "scripts": {
+    "server": "npm --prefix server run dev",
+    "client": "npm --prefix client run dev"
+  },
+
   "dependencies": {
-    "@prisma/client": "^7.10.0"
+    "@prisma/adapter-pg": "^7.10.0",
+    "@prisma/client": "^7.10.0",
+    "pg": "^8.23.0"
   }
 }
