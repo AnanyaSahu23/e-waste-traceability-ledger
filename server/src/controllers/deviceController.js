@@ -43,6 +43,84 @@ const registerDevice = async (req, res) => {
   }
 };
 
+
+const getAllDevices = async (req, res) => {
+  try {
+    const devices = await prisma.device.findMany({
+      include: {
+  category: true,
+  owner: {
+    select: {
+      id: true,
+      name: true,
+      email: true,
+      phone: true,
+      organizationId: true
+    }
+  }
+},
+      orderBy: {
+        createdAt: "desc"
+      }
+    });
+
+    res.status(200).json({
+      devices
+    });
+
+  } catch (error) {
+    console.error("Get devices error:", error);
+
+    res.status(500).json({
+      message: "Failed to fetch devices"
+    });
+  }
+};
+
+
+const getDeviceById = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const device = await prisma.device.findUnique({
+      where: {
+        id
+      },
+      include: {
+  category: true,
+  owner: {
+    select: {
+      id: true,
+      name: true,
+      email: true,
+      phone: true,
+      organizationId: true
+    }
+  }
+}
+    });
+
+    if (!device) {
+      return res.status(404).json({
+        message: "Device not found"
+      });
+    }
+
+    res.status(200).json({
+      device
+    });
+
+  } catch (error) {
+    console.error("Get device error:", error);
+
+    res.status(500).json({
+      message: "Failed to fetch device"
+    });
+  }
+};
+
 module.exports = {
-  registerDevice
+  registerDevice,
+  getAllDevices,
+  getDeviceById
 };
