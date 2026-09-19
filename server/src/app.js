@@ -3,12 +3,15 @@ const cors = require("cors");
 
 const prisma = require("./utils/prisma");
 const authRoutes = require("./routes/auth");
+const deviceRoutes = require("./routes/deviceRoutes");
 
 const app = express();
 
 app.use(cors());
 app.use(express.json());
 app.use("/api/auth", authRoutes);
+app.use("/api/devices", deviceRoutes);
+
 
 app.get("/api/health", (req, res) => {
   res.json({
