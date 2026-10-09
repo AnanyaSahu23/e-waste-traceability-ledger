@@ -1,4 +1,5 @@
 const express = require("express");
+const { requireAuth } = require("../middleware/auth");
 
 const {
   createOrganization,
@@ -8,7 +9,7 @@ const {
 
 const router = express.Router();
 
-router.post("/", createOrganization);
+router.post("/", requireAuth, createOrganization);
 
 router.get("/", getAllOrganizations);
 
