@@ -37,22 +37,33 @@ const schedulePickup = async (req, res) => {
       });
     }
 
-    const updatedPickup = await prisma.pickupRequest.update({
-      where: { id },
-      data: {
-        scheduledDate: date,
-        status: "ACCEPTED",
-      },
-      include: {
-        recyclingRequest: {
-          include: {
-            device: true,
-            organization: true,
-          },
+
+    const updatedPickup = await prisma.$transaction(async (tx) => {
+  const updated = await tx.pickupRequest.update({
+    where: { id },
+    data: {
+      scheduledDate: date,
+      status: "ACCEPTED",
+    },
+    include: {
+      recyclingRequest: {
+        include: {
+          device: true,
+          organization: true,
         },
       },
-    });
+    },
+  });
 
+  await tx.recyclingRequest.update({
+    where: { id: pickup.recyclingRequestId },
+    data: {
+      status: "SCHEDULED",
+    },
+  });
+
+  return updated;
+});
     return res.status(200).json({
       message: "Pickup scheduled successfully",
       pickupRequest: updatedPickup,
@@ -68,6 +79,7 @@ const schedulePickup = async (req, res) => {
 
 
 // Update pickup status
+
 const updatePickupStatus = async (req, res) => {
   try {
     const { id } = req.params;
@@ -113,12 +125,26 @@ const updatePickupStatus = async (req, res) => {
       });
     }
 
-    // Collection can only be completed after a date is scheduled.
     if (status === "COMPLETED" && !pickup.scheduledDate) {
       return res.status(400).json({
         message: "Schedule the pickup before completing it",
       });
     }
+
+    const performedBy = req.user?.id;
+
+    if (status === "COMPLETED" && !performedBy) {
+      return res.status(401).json({
+        message: "Authenticated user ID is missing",
+      });
+    }
+
+    const recyclingStatusMap = {
+      ACCEPTED: "ACCEPTED",
+      REJECTED: "REJECTED",
+      COMPLETED: "COLLECTED",
+      CANCELLED: "CANCELLED",
+    };
 
     const updatedPickup = await prisma.$transaction(async (tx) => {
       const updated = await tx.pickupRequest.update({
@@ -126,23 +152,22 @@ const updatePickupStatus = async (req, res) => {
         data: { status },
       });
 
+      const recyclingStatus = recyclingStatusMap[status];
+
+      if (recyclingStatus) {
+        await tx.recyclingRequest.update({
+          where: { id: pickup.recyclingRequestId },
+          data: { status: recyclingStatus },
+        });
+      }
+
       if (status === "COMPLETED") {
-        // req.user.id must be populated by your authentication middleware.
-        const performedBy = req.user?.id;
-
-        if (!performedBy) {
-          throw new Error(
-            "Authenticated user ID is missing from the request"
-          );
-        }
-
         await tx.event.create({
           data: {
             deviceId: pickup.recyclingRequest.deviceId,
             eventType: "COLLECTED",
             performedBy,
-            organizationId:
-              pickup.recyclingRequest.organizationId,
+            organizationId: pickup.recyclingRequest.organizationId,
             remarks: "Device collected from the pickup address",
           },
         });
