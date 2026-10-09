@@ -4,6 +4,7 @@ const cors = require("cors");
 const prisma = require("./utils/prisma");
 const authRoutes = require("./routes/authRoutes");
 const deviceRoutes = require("./routes/deviceRoutes");
+const recyclingRequestRoutes = require("./routes/recyclingRequestRoutes");
 const organizationRoutes = require("./routes/organizationRoutes");
 const userRoutes = require("./routes/userRoutes");
 
@@ -13,6 +14,7 @@ app.use(cors());
 app.use(express.json());
 app.use("/api/auth", authRoutes);
 app.use("/api/devices", deviceRoutes);
+app.use("/api/recycling-requests", recyclingRequestRoutes);
 app.use("/api/organizations", organizationRoutes);
 app.use("/api/users", userRoutes);
 
