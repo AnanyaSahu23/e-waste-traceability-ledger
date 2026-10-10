@@ -4,12 +4,13 @@ const registerDevice = async (req, res) => {
   try {
     const {
       categoryId,
-      ownerId,
       brand,
       model,
       serialNumber,
       manufactureYear
     } = req.body;
+
+    const ownerId = req.user.id;
 
     // Basic validation
     if (!categoryId || !ownerId || !brand || !model) {
