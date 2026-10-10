@@ -7,12 +7,14 @@ const deviceRoutes = require("./routes/deviceRoutes");
 const recyclingRequestRoutes = require("./routes/recyclingRequestRoutes");
 const organizationRoutes = require("./routes/organizationRoutes");
 const userRoutes = require("./routes/userRoutes");
+const pickupRoutes = require("./routes/pickupRoutes");
 
 const app = express();
 
 app.use(cors());
 app.use(express.json());
 app.use("/api/auth", authRoutes);
+app.use("/api/pickups", pickupRoutes);
 app.use("/api/devices", deviceRoutes);
 app.use("/api/recycling-requests", recyclingRequestRoutes);
 app.use("/api/organizations", organizationRoutes);
