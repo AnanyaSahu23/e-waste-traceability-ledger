@@ -5,10 +5,9 @@ const createEventWithLedger = async (tx, eventData) => {
 
   // Serialize ledger updates for this device to prevent competing
   // transactions from creating entries with the same previous hash.
-  await tx.$queryRaw`
-    SELECT pg_advisory_xact_lock(hashtext(${deviceId}))
-  `;
-
+await tx.$queryRaw`
+  SELECT pg_advisory_xact_lock(hashtext(${deviceId}))::text AS lock_result
+`;
   // Create the event.
   const event = await tx.event.create({
     data: eventData,

@@ -1,4 +1,5 @@
 const prisma = require("../utils/prisma");
+const { createEventWithLedger } = require("../utils/ledger");
 
 // Schedule a pickup and accept the request
 const schedulePickup = async (req, res) => {
@@ -162,14 +163,12 @@ const updatePickupStatus = async (req, res) => {
       }
 
       if (status === "COMPLETED") {
-        await tx.event.create({
-          data: {
-            deviceId: pickup.recyclingRequest.deviceId,
-            eventType: "COLLECTED",
-            performedBy,
-            organizationId: pickup.recyclingRequest.organizationId,
-            remarks: "Device collected from the pickup address",
-          },
+        await createEventWithLedger(tx, {
+          deviceId: pickup.recyclingRequest.deviceId,
+          eventType: "COLLECTED",
+          performedBy,
+          organizationId: pickup.recyclingRequest.organizationId,
+          remarks: "Device collected from the pickup address",
         });
       }
 
