@@ -9,6 +9,7 @@ const organizationRoutes = require("./routes/organizationRoutes");
 const userRoutes = require("./routes/userRoutes");
 const pickupRoutes = require("./routes/pickupRoutes");
 const ledgerRoutes = require("./routes/ledgerRoutes");
+const trackingRoutes = require("./routes/trackingRoutes");
 
 const app = express();
 
@@ -21,6 +22,7 @@ app.use("/api/recycling-requests", recyclingRequestRoutes);
 app.use("/api/organizations", organizationRoutes);
 app.use("/api/users", userRoutes);
 app.use("/api/ledger", ledgerRoutes);
+app.use("/api/tracking", trackingRoutes);
 
 app.get("/api/health", (req, res) => {
   res.json({
