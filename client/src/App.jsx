@@ -3,7 +3,7 @@ import MainLayout from "./layouts/MainLayout";
 import Dashboard from "./pages/Dashboard";
 import Devices from "./pages/Devices";
 import RegisterDevice from "./pages/RegisterDevice";
-// import TrackDevice from "./pages/TrackDevice";
+import TrackDevice from "./pages/TrackDevice";
 // import RecyclingRequests from "./pages/RecyclingRequests";
 import "./index.css";
 
@@ -15,8 +15,8 @@ function App() {
           <Route path="/" element={<Dashboard />} />
           <Route path="/devices" element={<Devices />} />
           <Route path="/register-device" element={<RegisterDevice />} />
-          {/* <Route path="/track-device" element={<TrackDevice />} />
-          <Route path="/recycling-requests" element={<RecyclingRequests />} />
+          <Route path="/track-device" element={<TrackDevice />} />
+          {/* <Route path="/recycling-requests" element={<RecyclingRequests />} />
           <Route path="*" element={<Navigate to="/" replace />} /> */}
         </Route>
       </Routes>
