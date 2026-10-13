@@ -44,7 +44,7 @@ return searchableText.includes(search.toLowerCase());
 
 });
 
-return ( <div className="page devices-page"> <div className="page-toolbar"> <div> <h2>All Devices</h2> <p>View and track the e-waste devices registered in the system.</p> </div>
+return ( <div className="page devices-page"> <div className="page-toolbar"> <div> <h1>My Devices</h1> <p>View and track the e-waste devices registered in the system.</p> </div>
 
     <Link to="/register-device" className="primary-link">
       <Plus size={16} />

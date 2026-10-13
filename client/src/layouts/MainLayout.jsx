@@ -19,17 +19,6 @@ export default function MainLayout() {
       <Sidebar />
 
       <main className="main-area">
-        <header className="topbar">
-          <div>
-            <p className="breadcrumb">Workspace / {title}</p>
-            <h1>{title}</h1>
-          </div>
-
-          <button className="icon-button" aria-label="Notifications">
-            <Bell size={20} />
-          </button>
-        </header>
-
         <section className="page-content">
           <Outlet />
         </section>

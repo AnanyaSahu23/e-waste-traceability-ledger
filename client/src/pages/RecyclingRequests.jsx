@@ -172,7 +172,6 @@ function RecyclingRequests() {
     <div className="page-container">
       <div className="page-heading">
         <div>
-          <p className="page-eyebrow">COLLECTION MANAGEMENT</p>
           <h1>Recycling Requests</h1>
           <p className="page-description">
             Request pickup for your registered e-waste devices and track

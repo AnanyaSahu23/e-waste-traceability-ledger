@@ -93,7 +93,7 @@ color: "purple",
 },
 ];
 
-return ( <div className="page dashboard"> <div className="dashboard-intro"> <div> <h2>Overview</h2> <p>
+return ( <div className="page dashboard"> <div className="dashboard-intro"> <div> <h1>Dashboard</h1> <p>
 Monitor your registered devices and their recycling progress. </p> </div>
 
     <button

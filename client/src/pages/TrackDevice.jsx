@@ -79,7 +79,7 @@ export default function TrackDevice() {
   return (
     <div className="page tracking-page">
       <div className="tracking-intro">
-        <h2>Device Lifecycle</h2>
+        <h1>Track Device</h1>
         <p>
           Follow a device from registration through collection and recycling,
           with cryptographic ledger verification.
