@@ -261,3 +261,19 @@
     font-size: 27px;
   }
 }
+
+
+
+.register-form {
+  gap: 16px;
+}
+
+@media (max-width: 760px) {
+  .login-form-panel {
+    align-items: flex-start;
+  }
+
+  .login-form-container {
+    margin: auto 0;
+  }
+}

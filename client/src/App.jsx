@@ -12,6 +12,7 @@ import RegisterDevice from "./pages/RegisterDevice";
 import TrackDevice from "./pages/TrackDevice";
 import RecyclingRequests from "./pages/RecyclingRequests";
 import Login from "./pages/Login";
+import Register from "./pages/Register";
 
 import "./index.css";
 
@@ -20,6 +21,7 @@ function App() {
     <BrowserRouter>
       <Routes>
         <Route path="/login" element={<Login />} />
+        <Route path="/register" element={<Register />} />
 
         <Route element={<MainLayout />}>
           <Route path="/" element={<Dashboard />} />
