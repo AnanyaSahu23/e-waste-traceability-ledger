@@ -40,6 +40,8 @@ function RecyclingRequests() {
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
 
+  const [organizations, setOrganizations] = useState([]);
+
   const [form, setForm] = useState({
     deviceId: "",
     organizationId: "",
@@ -48,23 +50,31 @@ function RecyclingRequests() {
   });
 
   const loadData = async () => {
-    setLoading(true);
-    setError("");
+  setLoading(true);
+  setError("");
 
-    try {
-      const [requestData, deviceData] = await Promise.all([
+  try {
+    const [requestData, deviceData, organizationData] =
+      await Promise.all([
         apiRequest("/recycling-requests"),
         apiRequest("/devices"),
+        apiRequest("/organizations"),
       ]);
 
-      setRequests(requestData.requests || []);
-      setDevices(deviceData.devices || []);
-    } catch (err) {
-      setError(getErrorMessage(err));
-    } finally {
-      setLoading(false);
-    }
-  };
+    setRequests(requestData.requests || []);
+    setDevices(deviceData.devices || []);
+
+    setOrganizations(
+      (organizationData.organizations || []).filter(
+        (organization) => organization.type === "COLLECTION_CENTER"
+      )
+    );
+  } catch (err) {
+    setError(getErrorMessage(err));
+  } finally {
+    setLoading(false);
+  }
+};
 
   useEffect(() => {
     loadData();
@@ -250,22 +260,30 @@ function RecyclingRequests() {
               </div>
 
               <div className="request-field">
-                <label htmlFor="organizationId">
-                  Collection organization ID
-                </label>
-                <input
-                  id="organizationId"
-                  name="organizationId"
-                  value={form.organizationId}
-                  onChange={handleChange}
-                  placeholder="Enter the organization UUID"
-                  required
-                />
-                <small>
-                  Enter the ID of the organization that will collect your
-                  device.
-                </small>
-              </div>
+  <label htmlFor="organizationId">Collection organization</label>
+
+  <select
+    id="organizationId"
+    name="organizationId"
+    value={form.organizationId}
+    onChange={handleChange}
+    required
+  >
+    <option value="">Select a collection center</option>
+
+    {organizations.map((organization) => (
+      <option key={organization.id} value={organization.id}>
+        {organization.name}
+      </option>
+    ))}
+  </select>
+
+  {organizations.length === 0 && (
+    <small>
+      No collection centers are available. Please try again later.
+    </small>
+  )}
+</div>
 
               <div className="request-field">
                 <label htmlFor="pickupAddress">Pickup address</label>
