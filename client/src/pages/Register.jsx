@@ -88,12 +88,11 @@ function Register() {
           <div className="login-brand-icon">
             <Recycle size={28} />
           </div>
-          <span>EcoLedger</span>
+          <span>EcoTrace</span>
         </div>
 
         <div className="login-brand-content">
-          <p className="login-eyebrow">JOIN THE CIRCULAR ECONOMY</p>
-          <h1>Make responsible e-waste disposal easier.</h1>
+          <h1>Join the Circular Economy</h1>
           <p className="login-brand-description">
             Create an account to register your devices, arrange collection,
             and follow their recycling journey.

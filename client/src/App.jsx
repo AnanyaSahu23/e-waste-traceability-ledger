@@ -13,6 +13,7 @@ import TrackDevice from "./pages/TrackDevice";
 import RecyclingRequests from "./pages/RecyclingRequests";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
+import RequireAuth from "./RequireAuth";
 
 import "./index.css";
 
@@ -23,18 +24,21 @@ function App() {
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
 
-        <Route element={<MainLayout />}>
-          <Route path="/" element={<Dashboard />} />
-          <Route path="/devices" element={<Devices />} />
-          <Route path="/register-device" element={<RegisterDevice />} />
-          <Route path="/track-device" element={<TrackDevice />} />
-          <Route
-            path="/recycling-requests"
-            element={<RecyclingRequests />}
-          />
-        </Route>
+        <Route element={<RequireAuth />}>
+          <Route element={<MainLayout />}>
+            <Route path="/" element={<Dashboard />} />
+            <Route path="/devices" element={<Devices />} />
+            <Route path="/register-device" element={<RegisterDevice />} />
+            <Route path="/track-device" element={<TrackDevice />} />
+            <Route
+              path="/recycling-requests"
+              element={<RecyclingRequests />}
+            />
+          </Route>
 
-        <Route path="*" element={<Navigate to="/" replace />} />
+
+          <Route path="*" element={<Navigate to="/" replace />} />
+        </Route>
       </Routes>
     </BrowserRouter>
   );

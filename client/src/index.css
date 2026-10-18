@@ -1541,3 +1541,16 @@ button {
   background-color: #f3f4f6;
   cursor: not-allowed;
 }
+
+
+/*logout icon*/
+.sidebar-footer {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+}
+
+.logout-icon {
+  margin-left: auto;
+  cursor: pointer;
+}

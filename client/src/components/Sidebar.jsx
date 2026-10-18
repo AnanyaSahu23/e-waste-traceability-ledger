@@ -3,6 +3,8 @@ import {
   LayoutDashboard,
   Laptop,
   PlusCircle,
+  UserRound,
+  LogOut,
   GitBranch,
   Recycle,
   Leaf,
@@ -19,6 +21,15 @@ const navItems = [
     icon: Recycle,
   },
 ];
+
+
+const handleLogout = () => {
+  localStorage.removeItem("token");
+  localStorage.removeItem("accessToken");
+  localStorage.removeItem("user");
+
+  navigate("/login", { replace: true });
+};
 
 export default function Sidebar() {
   return (
@@ -52,8 +63,16 @@ export default function Sidebar() {
       </nav>
 
       <div className="sidebar-footer">
-        <div className="status-dot" />
-        <span>Traceability system</span>
+         <UserRound size={20} />
+         <span>Profile</span>
+
+         <LogOut
+           size={18}
+           className="logout-icon"
+           onClick={handleLogout}
+           title="Logout"
+           aria-label="Logout"
+         />
       </div>
     </aside>
   );
