@@ -48,6 +48,9 @@ const registerDevice = async (req, res) => {
 const getAllDevices = async (req, res) => {
   try {
     const devices = await prisma.device.findMany({
+      where: {
+        ownerId: req.user.id
+      },
       include: {
   category: true,
   owner: {

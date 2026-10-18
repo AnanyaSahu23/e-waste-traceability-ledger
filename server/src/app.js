@@ -10,6 +10,7 @@ const userRoutes = require("./routes/userRoutes");
 const pickupRoutes = require("./routes/pickupRoutes");
 const ledgerRoutes = require("./routes/ledgerRoutes");
 const trackingRoutes = require("./routes/trackingRoutes");
+const deviceCategoryRoutes = require("./routes/deviceCategoryRoutes");
 
 const app = express();
 
@@ -18,6 +19,7 @@ app.use(express.json());
 app.use("/api/auth", authRoutes);
 app.use("/api/pickups", pickupRoutes);
 app.use("/api/devices", deviceRoutes);
+app.use("/api/device-categories", deviceCategoryRoutes);
 app.use("/api/recycling-requests", recyclingRequestRoutes);
 app.use("/api/organizations", organizationRoutes);
 app.use("/api/users", userRoutes);
