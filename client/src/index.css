@@ -1514,3 +1514,30 @@ button {
     width: 100%;
   }
 }
+
+
+/*REGISTER DEVICE CATEGORY DROPDOWN*/
+
+.form-field select {
+  width: 100%;
+  min-width: 0;
+  padding: 12px 13px;
+  border: 1px solid #dfe5df;
+  border-radius: 8px;
+  outline: none;
+  background-color: #ffffff;
+  color: #303a32;
+  font-family: inherit;
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.form-field select:focus {
+  border-color: #4c9363;
+  box-shadow: 0 0 0 3px #e5f3e8;
+}
+
+.form-field select:disabled {
+  background-color: #f3f4f6;
+  cursor: not-allowed;
+}

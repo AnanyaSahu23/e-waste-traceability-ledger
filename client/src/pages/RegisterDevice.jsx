@@ -1,7 +1,7 @@
-import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+
+import { useState, useEffect } from "react";
+import { useNavigate, Link } from "react-router-dom";
 import { Laptop, ArrowLeft, CheckCircle2 } from "lucide-react";
-import { Link } from "react-router-dom";
 import { apiRequest } from "../services/api";
 
 const initialForm = {
@@ -16,9 +16,26 @@ export default function RegisterDevice() {
   const navigate = useNavigate();
 
   const [form, setForm] = useState(initialForm);
+  const [categories, setCategories] = useState([]);
+  const [loadingCategories, setLoadingCategories] = useState(true);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
+
+  useEffect(() => {
+    async function fetchCategories() {
+      try {
+        const data = await apiRequest("/device-categories");
+        setCategories(data.categories || []);
+      } catch (err) {
+        setError(err.message || "Failed to load device categories.");
+      } finally {
+        setLoadingCategories(false);
+      }
+    }
+
+    fetchCategories();
+  }, []);
 
   function handleChange(event) {
     const { name, value } = event.target;
@@ -34,8 +51,8 @@ export default function RegisterDevice() {
     setError("");
     setSuccess("");
 
-    if (!form.categoryId.trim() || !form.brand.trim() || !form.model.trim()) {
-      setError("Category ID, brand, and model are required.");
+    if (!form.categoryId || !form.brand.trim() || !form.model.trim()) {
+      setError("Category, brand, and model are required.");
       return;
     }
 
@@ -45,14 +62,16 @@ export default function RegisterDevice() {
 
     if (
       year !== undefined &&
-      (!Number.isInteger(year) || year < 1900 || year > new Date().getFullYear())
+      (!Number.isInteger(year) ||
+        year < 1900 ||
+        year > new Date().getFullYear())
     ) {
       setError("Enter a valid manufacture year.");
       return;
     }
 
     const payload = {
-      categoryId: form.categoryId.trim(),
+      categoryId: form.categoryId,
       brand: form.brand.trim(),
       model: form.model.trim(),
       ...(form.serialNumber.trim()
@@ -72,7 +91,6 @@ export default function RegisterDevice() {
       setSuccess(data.message || "Device registered successfully.");
       setForm(initialForm);
 
-      // Give the user a moment to see the confirmation.
       setTimeout(() => {
         navigate("/devices");
       }, 800);
@@ -118,18 +136,29 @@ export default function RegisterDevice() {
 
         <form onSubmit={handleSubmit}>
           <div className="form-field">
-            <label htmlFor="categoryId">Category ID *</label>
-            <input
+            <label htmlFor="categoryId">Device Category *</label>
+            <select
               id="categoryId"
               name="categoryId"
               value={form.categoryId}
               onChange={handleChange}
-              placeholder="Enter the device category UUID"
               required
-            />
-            <span className="field-hint">
-              Use an existing category ID from your database.
-            </span>
+              disabled={loadingCategories || categories.length === 0}
+            >
+              <option value="">
+                {loadingCategories
+                  ? "Loading categories..."
+                  : categories.length === 0
+                    ? "No categories available"
+                    : "Select a device category"}
+              </option>
+
+              {categories.map((category) => (
+                <option key={category.id} value={category.id}>
+                  {category.name}
+                </option>
+              ))}
+            </select>
           </div>
 
           <div className="form-row">
@@ -191,7 +220,9 @@ export default function RegisterDevice() {
             <button
               type="submit"
               className="submit-button"
-              disabled={loading}
+              disabled={
+                loading || loadingCategories || categories.length === 0
+              }
             >
               {loading ? "Registering..." : "Register Device"}
             </button>
