@@ -28,7 +28,7 @@ const handleLogout = () => {
   localStorage.removeItem("accessToken");
   localStorage.removeItem("user");
 
-  navigate("/login", { replace: true });
+  window.location.replace("/login");
 };
 
 export default function Sidebar() {
