@@ -1,4 +1,8 @@
 const prisma = require("../utils/prisma");
+const { createEventWithLedger } = require("../utils/ledger");
+
+const uuidPattern =
+  /^[0-9a-f]{8}-(?:[0-9a-f]{4}-){3}[0-9a-f]{12}$/i;
 
 const registerDevice = async (req, res) => {
   try {
@@ -12,25 +16,63 @@ const registerDevice = async (req, res) => {
 
     const ownerId = req.user.id;
 
-    // Basic validation
-    if (!categoryId || !ownerId || !brand || !model) {
+    if (
+      typeof categoryId !== "string" ||
+      !uuidPattern.test(categoryId) ||
+      !ownerId ||
+      typeof brand !== "string" ||
+      !brand.trim() ||
+      typeof model !== "string" ||
+      !model.trim()
+    ) {
       return res.status(400).json({
-        message: "categoryId, ownerId, brand, and model are required"
+        message: "categoryId, brand, and model are required"
       });
     }
 
-    const device = await prisma.device.create({
-      data: {
-        categoryId,
-        ownerId,
-        brand,
-        model,
-        serialNumber,
-        manufactureYear
-      }
+    if (serialNumber !== undefined && typeof serialNumber !== "string") {
+      return res.status(400).json({
+        message: "serialNumber must be a string"
+      });
+    }
+
+    if (
+      manufactureYear !== undefined &&
+      (!Number.isInteger(manufactureYear) ||
+        manufactureYear < 1900 ||
+        manufactureYear > new Date().getFullYear())
+    ) {
+      return res.status(400).json({
+        message: "manufactureYear must be a valid year"
+      });
+    }
+
+    const device = await prisma.$transaction(async (tx) => {
+      const createdDevice = await tx.device.create({
+        data: {
+          categoryId,
+          ownerId,
+          brand: brand.trim(),
+          model: model.trim(),
+          serialNumber:
+            typeof serialNumber === "string" && serialNumber.trim()
+              ? serialNumber.trim()
+              : null,
+          manufactureYear
+        }
+      });
+
+      await createEventWithLedger(tx, {
+        deviceId: createdDevice.id,
+        eventType: "REGISTERED",
+        performedBy: ownerId,
+        remarks: "Device registered"
+      });
+
+      return createdDevice;
     });
 
-    res.status(201).json({
+    return res.status(201).json({
       message: "Device registered successfully",
       device
     });
@@ -38,7 +80,13 @@ const registerDevice = async (req, res) => {
   } catch (error) {
     console.error("Device registration error:", error);
 
-    res.status(500).json({
+    if (error.code === "P2003" || error.code === "P2025") {
+      return res.status(400).json({
+        message: "The device category or authenticated user no longer exists"
+      });
+    }
+
+    return res.status(500).json({
       message: "Failed to register device"
     });
   }

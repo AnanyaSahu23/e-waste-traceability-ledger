@@ -63,6 +63,11 @@ enum EventType {
   COMPLETED
 }
 
+enum TransferStatus {
+  PENDING
+  ACCEPTED
+}
+
 // =====================================================
 // USER
 // =====================================================
@@ -80,6 +85,9 @@ model User {
 
   // Events performed by this user
   events Event[]
+
+  // Custody transfers requested by this user
+  requestedTransfers CustodyTransfer[] @relation("TransferRequester")
 
   // Ledger verification records
   verifications Verification[]
@@ -117,6 +125,12 @@ model Organization {
 
   // Events where this organization is receiver
   incomingEvents Event[] @relation("EventToOrganization")
+
+  // Custody transfers leaving this organization
+  outgoingTransfers CustodyTransfer[] @relation("TransferFromOrganization")
+
+  // Custody transfers arriving at this organization
+  incomingTransfers CustodyTransfer[] @relation("TransferToOrganization")
 }
 
 // =====================================================
@@ -178,6 +192,9 @@ model Device {
 
   // Ledger chain for this device
   ledgerEntries LedgerEntry[]
+
+  // Custody transfers for this device
+  custodyTransfers CustodyTransfer[]
 
   // Verification records
   verifications Verification[]
@@ -286,12 +303,43 @@ model Event {
   // Every event gets exactly one ledger entry
   ledgerEntry LedgerEntry?
 
+  // Transfer events associated with this event
+  initiatedTransfer CustodyTransfer? @relation("TransferInitiatedEvent")
+  acceptedTransfer  CustodyTransfer? @relation("TransferAcceptedEvent")
+
   @@index([deviceId])
   @@index([eventType])
   @@index([organizationId])
   @@index([fromOrganizationId])
   @@index([toOrganizationId])
   @@index([createdAt])
+}
+
+// =====================================================
+// CUSTODY TRANSFER
+// =====================================================
+
+model CustodyTransfer {
+  id                 String         @id @default(uuid()) @db.Uuid
+  deviceId           String         @db.Uuid
+  fromOrganizationId String         @db.Uuid
+  toOrganizationId   String         @db.Uuid
+  requestedBy        String         @db.Uuid
+  initiatedEventId   String         @unique @db.Uuid
+  acceptedEventId    String?        @unique @db.Uuid
+  status             TransferStatus @default(PENDING)
+  createdAt          DateTime       @default(now())
+  acceptedAt         DateTime?
+
+  device           Device       @relation(fields: [deviceId], references: [id])
+  fromOrganization Organization @relation("TransferFromOrganization", fields: [fromOrganizationId], references: [id])
+  toOrganization   Organization @relation("TransferToOrganization", fields: [toOrganizationId], references: [id])
+  requester        User         @relation("TransferRequester", fields: [requestedBy], references: [id])
+  initiatedEvent   Event        @relation("TransferInitiatedEvent", fields: [initiatedEventId], references: [id])
+  acceptedEvent    Event?       @relation("TransferAcceptedEvent", fields: [acceptedEventId], references: [id])
+
+  @@index([deviceId, status])
+  @@index([toOrganizationId, status])
 }
 
 // =====================================================
