@@ -109,6 +109,9 @@ const requestCustodyTransfer = async (req, res) => {
     }
 
     const transfer = await prisma.$transaction(async (tx) => {
+      await tx.$queryRaw`
+        SELECT pg_advisory_xact_lock(hashtext(${deviceId}))::text AS lock_result
+      `;
       const activeTransfer = await tx.custodyTransfer.findFirst({
         where: { deviceId, status: "PENDING" },
         select: { id: true },

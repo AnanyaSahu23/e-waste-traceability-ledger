@@ -9,6 +9,15 @@ const publicUser = {
   email: true,
   phone: true,
   organizationId: true,
+  organization: {
+    select: {
+      id: true,
+      name: true,
+      type: true,
+      licenseNumber: true,
+      contactEmail: true,
+    },
+  },
   createdAt: true,
 };
 

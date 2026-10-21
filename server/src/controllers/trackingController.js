@@ -18,6 +18,30 @@ const getDeviceTracking = async (req, res) => {
             fromOrganization: true,
             toOrganization: true,
             ledgerEntry: true,
+            recoveryOperation: {
+              select: {
+                id: true,
+                recoveredAt: true,
+                remarks: true,
+                materials: {
+                  include: {
+                    material: { select: { id: true, name: true } },
+                  },
+                  orderBy: { createdAt: "asc" },
+                },
+              },
+            },
+            disposalRecord: {
+              select: {
+                wasteDescription: true,
+                disposalMethod: true,
+                quantity: true,
+                unit: true,
+                facilityName: true,
+                hazardous: true,
+                disposalDate: true,
+              },
+            },
           },
         },
       },
@@ -54,6 +78,33 @@ const getDeviceTracking = async (req, res) => {
         fromOrganization: event.fromOrganization,
         toOrganization: event.toOrganization,
         remarks: event.remarks,
+        recovery: event.recoveryOperation
+          ? {
+              id: event.recoveryOperation.id,
+              recoveredAt: event.recoveryOperation.recoveredAt,
+              remarks: event.recoveryOperation.remarks,
+              materials: event.recoveryOperation.materials.map((item) => ({
+                materialType: item.material.name,
+                quantity: Number(item.quantity),
+                unit: item.unit,
+                condition: item.condition,
+              })),
+            }
+          : null,
+        disposal: event.disposalRecord
+          ? {
+              wasteDescription: event.disposalRecord.wasteDescription,
+              disposalMethod: event.disposalRecord.disposalMethod,
+              quantity:
+                event.disposalRecord.quantity === null
+                  ? null
+                  : Number(event.disposalRecord.quantity),
+              unit: event.disposalRecord.unit,
+              facilityName: event.disposalRecord.facilityName,
+              hazardous: event.disposalRecord.hazardous,
+              disposalDate: event.disposalRecord.disposalDate,
+            }
+          : null,
         ledger: event.ledgerEntry
           ? {
               entryId: event.ledgerEntry.id,
