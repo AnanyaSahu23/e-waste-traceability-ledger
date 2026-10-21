@@ -148,6 +148,24 @@ const updatePickupStatus = async (req, res) => {
     };
 
     const updatedPickup = await prisma.$transaction(async (tx) => {
+      if (status === "COMPLETED") {
+        const deviceUpdate = await tx.device.updateMany({
+          where: {
+            id: pickup.recyclingRequest.deviceId,
+            currentStatus: {
+              in: ["REGISTERED", "AWAITING_COLLECTION"],
+            },
+          },
+          data: { currentStatus: "COLLECTED" },
+        });
+
+        if (deviceUpdate.count === 0) {
+          const error = new Error("Device is no longer awaiting collection");
+          error.code = "DEVICE_STATUS_CONFLICT";
+          throw error;
+        }
+      }
+
       const updated = await tx.pickupRequest.update({
         where: { id },
         data: { status },
@@ -180,6 +198,12 @@ const updatePickupStatus = async (req, res) => {
       pickupRequest: updatedPickup,
     });
   } catch (error) {
+    if (error.code === "DEVICE_STATUS_CONFLICT") {
+      return res.status(409).json({
+        message: "The device is no longer awaiting collection",
+      });
+    }
+
     console.error("Update pickup status error:", error);
 
     return res.status(500).json({
