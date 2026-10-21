@@ -1,11 +1,17 @@
 import { useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { Eye, EyeOff, Recycle, LoaderCircle } from "lucide-react";
 import { apiRequest } from "../services/api";
+import AccountTypeSwitch from "../components/AccountTypeSwitch";
 import "./Login.css";
 
 function Login() {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const initialAccountType = searchParams.get("accountType") === "organization"
+    ? "organization"
+    : "individual";
+  const [accountType, setAccountType] = useState(initialAccountType);
 
   const [form, setForm] = useState({
     email: "",
@@ -50,6 +56,17 @@ function Login() {
 
       if (!data.token) {
         throw new Error("Login succeeded but no authentication token was returned.");
+      }
+      const isOrganizationAccount = Boolean(data.user?.organizationId);
+      if (
+        (accountType === "organization" && !isOrganizationAccount) ||
+        (accountType === "individual" && isOrganizationAccount)
+      ) {
+        throw new Error(
+          accountType === "organization"
+            ? "This account is not linked to an organization. Choose Individual or register an organization account."
+            : "This account belongs to an organization. Choose Organization to sign in."
+        );
       }
 
       localStorage.setItem("token", data.token);
@@ -98,9 +115,11 @@ function Login() {
 
           <div className="login-heading">
             <p className="login-eyebrow">WELCOME BACK</p>
-            <h2>Sign in to your account</h2>
-            <p>Enter your credentials to continue.</p>
+            <h2>{accountType === "organization" ? "Organization sign in" : "Sign in to your account"}</h2>
+            <p>Choose your portal, then enter your credentials.</p>
           </div>
+
+          <AccountTypeSwitch value={accountType} onChange={(value) => { setAccountType(value); setError(""); }} />
 
           <form className="login-form" onSubmit={handleSubmit}>
             <div className="login-field">
@@ -166,7 +185,7 @@ function Login() {
           </form>
 
           <p className="login-register-prompt">
-            Don't have an account? <Link to="/register">Create one</Link>
+            Don't have an account? <Link to={`/register?accountType=${accountType}`}>Create one</Link>
           </p>
         </div>
       </section>
