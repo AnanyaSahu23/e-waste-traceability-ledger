@@ -115,13 +115,6 @@ export default function OrganizationLayout() {
         </div>
       </aside>
       <main className="org-main">
-        <header className="org-topbar">
-          <div>
-            <p className="breadcrumb">Organisation workspace</p>
-            <h1>{navItems.find((item) => item.path === location.pathname)?.label || (location.pathname === "/org" ? "Overview" : "Operations")}</h1>
-          </div>
-          <span className="org-type-pill">{organization.type.replaceAll("_", " ")}</span>
-        </header>
         <section className="org-page-content">
           <Outlet context={{ organization }} />
         </section>

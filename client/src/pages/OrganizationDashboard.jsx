@@ -54,7 +54,7 @@ export default function OrganizationDashboard() {
     <div className="org-page">
       <div className="dashboard-intro">
         <div>
-          <h2>Operations overview</h2>
+          <h2>Overview</h2>
           <p>Live activity and work assigned to your organisation.</p>
         </div>
         <button className="refresh-button" onClick={() => { setLoading(true); void load(); }} disabled={loading}>

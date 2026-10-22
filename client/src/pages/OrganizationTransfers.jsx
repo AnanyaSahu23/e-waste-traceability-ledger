@@ -67,7 +67,7 @@ export default function OrganizationTransfers() {
 
   return (
     <div className="org-page">
-      <div className="dashboard-intro"><div><h2>Custody transfers</h2><p>Dispatch a device to another organisation or accept an incoming handover.</p></div><button className="refresh-button" onClick={() => { setLoading(true); void load(); }} disabled={loading}><RefreshCw size={16} /> Refresh</button></div>
+      <div className="dashboard-intro"><div><h2>Custody Transfers</h2><p>Dispatch a device to another organisation or accept an incoming handover.</p></div><button className="refresh-button" onClick={() => { setLoading(true); void load(); }} disabled={loading}><RefreshCw size={16} /> Refresh</button></div>
       {error && <div className="error-banner" role="alert"><p>{error}</p><button onClick={load}>Try again</button></div>}
       {notice && <div className="form-message success-message" role="status">{notice}</div>}
       <section className="org-form-card">
