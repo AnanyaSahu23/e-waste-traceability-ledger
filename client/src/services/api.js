@@ -18,7 +18,15 @@ export async function apiRequest(endpoint, options = {}) {
   const data = await response.json().catch(() => ({}));
 
   if (!response.ok) {
-    throw new Error(data.message || data.error ||"Something went wrong");
+    // Session expired
+    if (response.status === 401) {
+      localStorage.removeItem("token");
+      localStorage.removeItem("accessToken");
+      window.location.replace("/login");
+      return;
+    }
+
+    throw new Error(data.message || data.error || "Something went wrong");
   }
 
   return data;
