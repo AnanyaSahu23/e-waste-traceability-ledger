@@ -33,9 +33,9 @@ function App() {
         <Route path="/register" element={<Register />} />
 
         <Route element={<RequireAuth />}>
-          <Route path="/" element={<PortalHome />} />
-          <Route element={<IndividualPortalGuard />}>
-            <Route element={<MainLayout />}>
+          <Route element={<MainLayout />}>
+            <Route path="/" element={<PortalHome />} />
+            <Route element={<IndividualPortalGuard />}>
               <Route path="/devices" element={<Devices />} />
               <Route path="/register-device" element={<RegisterDevice />} />
               <Route path="/track-device" element={<TrackDevice />} />
