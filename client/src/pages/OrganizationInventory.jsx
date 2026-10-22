@@ -51,7 +51,7 @@ export default function OrganizationInventory() {
   return (
     <div className="org-page">
       <div className="dashboard-intro">
-        <div><h2>Device intake & custody</h2><p>Devices are listed here only while your organisation is their current custodian.</p></div>
+        <div><h2>Device Intake And Custody</h2><p>Devices are listed here only while your organisation is their current custodian.</p></div>
         <button className="refresh-button" onClick={() => { setLoading(true); void load(); }} disabled={loading}><RefreshCw size={16} /> Refresh</button>
       </div>
       {error && <div className="error-banner" role="alert"><p>{error}</p><button onClick={load}>Try again</button></div>}

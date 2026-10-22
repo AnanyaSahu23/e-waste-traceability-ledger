@@ -47,7 +47,8 @@ const registerDevice = async (req, res) => {
       });
     }
 
-    const device = await prisma.$transaction(async (tx) => {
+    const device = await prisma.$transaction(
+      async (tx) => {
       const createdDevice = await tx.device.create({
         data: {
           categoryId,
@@ -70,7 +71,12 @@ const registerDevice = async (req, res) => {
       });
 
       return createdDevice;
-    });
+    },
+  {
+    maxWait: 10000,
+    timeout: 20000,
+  }
+);
 
     return res.status(201).json({
       message: "Device registered successfully",

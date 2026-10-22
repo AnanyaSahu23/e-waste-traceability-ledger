@@ -46,7 +46,7 @@ export default function OrganizationLedger() {
 
   return (
     <div className="org-page">
-      <div className="dashboard-intro"><div><h2>Lifecycle ledger</h2><p>Readable event history first; hash-chain details are available on demand.</p></div></div>
+      <div className="dashboard-intro"><div><h2>Lifecycle Ledger</h2><p>Readable event history first; hash-chain details are available on demand.</p></div></div>
       <form className="org-ledger-search" onSubmit={(event) => { event.preventDefault(); setLoading(true); setError(""); setData(null); void load(deviceId); }}>
         <Search size={17} /><input aria-label="Device ID" value={deviceId} onChange={(event) => setDeviceId(event.target.value)} placeholder="Enter device UUID" />
         <button className="submit-button" disabled={loading}>{loading ? "Loading..." : "View lifecycle"}</button>

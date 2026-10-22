@@ -302,7 +302,12 @@ const recordMaterialRecovery = async (req, res) => {
         recoveryId: details.recovery.id,
         replayed: false,
       };
-    });
+    },
+    {
+        maxWait: 10000,
+        timeout: 20000,
+    }
+);
 
     if (result.conflict) {
       return res.status(409).json({
@@ -621,7 +626,13 @@ const recordDisposal = async (req, res) => {
         currentStatus: device.currentStatus,
         replayed: false,
       };
-    });
+    },
+  {
+        maxWait: 10000,
+        timeout: 20000,
+    }
+
+  );
 
     if (result.conflict) {
       return res.status(409).json({

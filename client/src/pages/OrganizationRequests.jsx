@@ -78,7 +78,7 @@ export default function OrganizationRequests() {
   return (
     <div className="org-page">
       <div className="dashboard-intro">
-        <div><h2>Incoming recycling requests</h2><p>Review requests assigned to your organisation. Acceptance is not physical custody.</p></div>
+        <div><h2>Incoming Recycling Requests</h2><p>Review requests assigned to your organisation. Acceptance is not physical custody.</p></div>
         <button className="refresh-button" onClick={() => { setLoading(true); void load(); }} disabled={loading}><RefreshCw size={16} /> Refresh</button>
       </div>
       {error && <div className="error-banner" role="alert"><p>{error}</p><button onClick={load}>Try again</button></div>}

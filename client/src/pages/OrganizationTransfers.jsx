@@ -14,6 +14,9 @@ export default function OrganizationTransfers() {
   const [busyId, setBusyId] = useState("");
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
+  const incomingPending = transfers.filter((transfer) =>
+    transfer.status === "PENDING" && transfer.toOrganizationId === organization.id
+  );
 
   const load = useCallback(async () => {
     try {
@@ -67,9 +70,22 @@ export default function OrganizationTransfers() {
 
   return (
     <div className="org-page">
-      <div className="dashboard-intro"><div><h2>Custody transfers</h2><p>Dispatch a device to another organisation or accept an incoming handover.</p></div><button className="refresh-button" onClick={() => { setLoading(true); void load(); }} disabled={loading}><RefreshCw size={16} /> Refresh</button></div>
+      <div className="dashboard-intro"><div><h2>Custody Transfers</h2><p>Dispatch a device to another organisation or accept an incoming handover.</p></div><button className="refresh-button" onClick={() => { setLoading(true); void load(); }} disabled={loading}><RefreshCw size={16} /> Refresh</button></div>
       {error && <div className="error-banner" role="alert"><p>{error}</p><button onClick={load}>Try again</button></div>}
       {notice && <div className="form-message success-message" role="status">{notice}</div>}
+      <section className="dashboard-section">
+        <div className="section-heading"><div><h2>Incoming transfer requests</h2><p>Accept a handover after your organisation has physically received the device.</p></div><span className="status-pill">{incomingPending.length} pending</span></div>
+        {loading ? <div className="org-loading">Loading incoming transfers...</div> : incomingPending.length ? <div className="table-container"><table className="data-table">
+          <thead><tr><th>Device</th><th>From organisation</th><th>Requested</th><th>Notes</th><th>Action</th></tr></thead>
+          <tbody>{incomingPending.map((transfer) => <tr key={transfer.id}>
+            <td><strong>{transfer.device.brand} {transfer.device.model}</strong><br /><small>{transfer.device.id}</small></td>
+            <td>{transfer.fromOrganization.name}</td>
+            <td>{new Date(transfer.createdAt).toLocaleString("en-IN", { dateStyle: "medium", timeStyle: "short" })}</td>
+            <td>{transfer.initiatedEvent?.remarks || "—"}</td>
+            <td><button className="table-link-button" disabled={busyId === transfer.id} onClick={() => acceptTransfer(transfer)}><Truck size={14} /> {busyId === transfer.id ? "Accepting..." : "Accept handover"}</button></td>
+          </tr>)}</tbody>
+        </table></div> : <div className="empty-state"><h3>No incoming transfers to accept</h3><p>Requests sent to your organisation will appear here.</p></div>}
+      </section>
       <section className="org-form-card">
         <h3>Initiate a custody transfer</h3>
         <p>Device status changes to in transit. The receiver records custody only when they accept the transfer.</p>
@@ -89,7 +105,7 @@ export default function OrganizationTransfers() {
             <td>{transfer.fromOrganization.name}</td><td>{transfer.toOrganization.name}</td>
             <td>{new Date(transfer.createdAt).toLocaleString("en-IN", { dateStyle: "medium", timeStyle: "short" })}</td>
             <td><span className="status-pill">{transfer.status}</span></td>
-            <td>{transfer.status === "PENDING" && transfer.toOrganizationId === organization.id && <button className="table-link-button" disabled={busyId === transfer.id} onClick={() => acceptTransfer(transfer)}><Truck size={14} /> Accept handover</button>}</td>
+            <td>{transfer.status === "PENDING" && transfer.toOrganizationId === organization.id ? "Awaiting acceptance" : "—"}</td>
           </tr>)}</tbody>
         </table></div> : <div className="empty-state"><h3>No transfers yet</h3><p>When you dispatch or are assigned a device transfer, it will appear here.</p></div>}
       </section>

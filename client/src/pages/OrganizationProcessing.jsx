@@ -132,7 +132,7 @@ export default function OrganizationProcessing() {
 
   return (
     <div className="org-page">
-      <div className="dashboard-intro"><div><h2>Material recovery & disposal</h2><p>Record recovered output separately from each remaining waste stream.</p></div><button className="refresh-button" onClick={() => { setLoading(true); void load(); }} disabled={loading}><RefreshCw size={16} /> Refresh</button></div>
+      <div className="dashboard-intro"><div><h2>Material Recovery And Disposal</h2><p>Record recovered output separately from each remaining waste stream.</p></div><button className="refresh-button" onClick={() => { setLoading(true); void load(); }} disabled={loading}><RefreshCw size={16} /> Refresh</button></div>
       {error && <div className="error-banner" role="alert"><p>{error}</p><button onClick={load}>Try again</button></div>}
       {notice && <div className="form-message success-message" role="status">{notice}</div>}
       {loading && !devices.length ? <div className="org-loading">Loading eligible devices...</div> : !devices.length ? (

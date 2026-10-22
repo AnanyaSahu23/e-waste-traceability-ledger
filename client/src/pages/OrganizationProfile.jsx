@@ -5,7 +5,7 @@ export default function OrganizationProfile() {
   const { organization } = useOutletContext();
   return (
     <div className="org-page">
-      <div className="dashboard-intro"><div><h2>Organisation profile</h2><p>Verified organisation information attached to your signed-in account.</p></div></div>
+      <div className="dashboard-intro"><div><h2>Organisation Profile</h2><p>Verified organisation information attached to your signed-in account.</p></div></div>
       <section className="org-profile-card">
         <div className="org-profile-icon"><Building2 size={25} /></div>
         <p className="eyebrow">ORGANISATION</p>

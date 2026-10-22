@@ -426,6 +426,7 @@ const getTransfers = async (req, res) => {
         },
         fromOrganization: { select: { id: true, name: true } },
         toOrganization: { select: { id: true, name: true } },
+        initiatedEvent: { select: { remarks: true } },
       },
       orderBy: { createdAt: "desc" },
     });
@@ -517,7 +518,7 @@ const getDashboard = async (req, res) => {
   try {
     const user = await requireOrganization(req, res);
     if (!user) return;
-    const [requests, devices, recoveries, disposals, recentEvents] = await Promise.all([
+    const [requests, devices, recoveries, disposals, recentEvents, pendingTransferCount, pendingTransfers] = await Promise.all([
       prisma.recyclingRequest.groupBy({
         by: ["status"],
         where: { organizationId: user.organizationId },
@@ -565,6 +566,18 @@ const getDashboard = async (req, res) => {
           device: { select: { id: true, brand: true, model: true } },
         },
       }),
+      prisma.custodyTransfer.count({
+        where: { toOrganizationId: user.organizationId, status: "PENDING" },
+      }),
+      prisma.custodyTransfer.findMany({
+        where: { toOrganizationId: user.organizationId, status: "PENDING" },
+        take: 5,
+        include: {
+          device: { select: { id: true, brand: true, model: true } },
+          fromOrganization: { select: { name: true } },
+        },
+        orderBy: { createdAt: "desc" },
+      }),
     ]);
     const custody = devices.filter((device) => {
       const latest = device.events[0];
@@ -577,7 +590,8 @@ const getDashboard = async (req, res) => {
     return res.status(200).json({
       organization: user.organization,
       metrics: {
-        pendingRequests: requestCounts.PENDING || 0,
+        pendingRequests: (requestCounts.PENDING || 0) + pendingTransferCount,
+        pendingTransferRequests: pendingTransferCount,
         acceptedRequests: requestCounts.ACCEPTED || 0,
         devicesInCustody: custody.length,
         recoveryOperations: recoveries,
@@ -595,6 +609,7 @@ const getDashboard = async (req, res) => {
         include: requestInclude,
         orderBy: { createdAt: "desc" },
       }),
+      pendingTransfers,
     });
   } catch (error) {
     console.error("Get organization dashboard error:", error);
