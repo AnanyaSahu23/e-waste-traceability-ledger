@@ -78,27 +78,39 @@ export default function OrganizationDashboard() {
       </div>
 
       <div className="org-dashboard-grid">
-        {data?.organization?.type === "COLLECTION_CENTER" && <section className="dashboard-section">
+        <section className="dashboard-section">
           <div className="section-heading">
-            <div><h2>Pending requests</h2><p>Requests awaiting your review.</p></div>
-            <Link className="text-link" to="/org/requests">View all <ArrowRight size={14} /></Link>
+            <div><h2>Pending requests</h2><p>Incoming recycling requests and custody handovers awaiting action.</p></div>
+            <Link className="text-link" to="/org/transfers">View transfers <ArrowRight size={14} /></Link>
           </div>
-          {data?.pendingRequests?.length ? (
+          {(data?.pendingRequests?.length || data?.pendingTransfers?.length) ? (
             <div className="table-container">
               <table className="data-table">
-                <thead><tr><th>Device</th><th>Requester</th><th>Received</th><th /></tr></thead>
-                <tbody>{data.pendingRequests.map((request) => (
-                  <tr key={request.id}>
-                    <td><strong>{request.device.brand} {request.device.model}</strong><br />{request.device.category?.name}</td>
-                    <td>{request.device.owner?.name || "Device owner"}</td>
-                    <td>{formatDate(request.createdAt)}</td>
-                    <td><Link className="table-link" to="/org/requests">Review</Link></td>
-                  </tr>
-                ))}</tbody>
+                <thead><tr><th>Type</th><th>Device</th><th>From</th><th>Received</th><th /></tr></thead>
+                <tbody>
+                  {(data.pendingRequests || []).map((request) => (
+                    <tr key={`request-${request.id}`}>
+                      <td>Recycling request</td>
+                      <td><strong>{request.device.brand} {request.device.model}</strong><br />{request.device.category?.name}</td>
+                      <td>{request.device.owner?.name || "Device owner"}</td>
+                      <td>{formatDate(request.createdAt)}</td>
+                      <td><Link className="table-link" to="/org/requests">Review</Link></td>
+                    </tr>
+                  ))}
+                  {(data.pendingTransfers || []).map((transfer) => (
+                    <tr key={`transfer-${transfer.id}`}>
+                      <td>Custody transfer</td>
+                      <td><strong>{transfer.device.brand} {transfer.device.model}</strong><br /><small>{transfer.device.id}</small></td>
+                      <td>{transfer.fromOrganization.name}</td>
+                      <td>{formatDate(transfer.createdAt)}</td>
+                      <td><Link className="table-link" to="/org/transfers">Accept</Link></td>
+                    </tr>
+                  ))}
+                </tbody>
               </table>
             </div>
           ) : <div className="org-empty-inline">No pending requests.</div>}
-        </section>}
+        </section>
 
         <section className="dashboard-section">
           <div className="section-heading">
