@@ -12,6 +12,8 @@ const ledgerRoutes = require("./routes/ledgerRoutes");
 const trackingRoutes = require("./routes/trackingRoutes");
 const deviceCategoryRoutes = require("./routes/deviceCategoryRoutes");
 const transferRoutes = require("./routes/transferRoutes");
+const materialRecoveryRoutes = require("./routes/materialRecoveryRoutes");
+const organizationPortalRoutes = require("./routes/organizationPortalRoutes");
 
 const app = express();
 
@@ -27,6 +29,8 @@ app.use("/api/users", userRoutes);
 app.use("/api/ledger", ledgerRoutes);
 app.use("/api/tracking", trackingRoutes);
 app.use("/api/transfers", transferRoutes);
+app.use("/api/material-recovery", materialRecoveryRoutes);
+app.use("/api/organization-portal", organizationPortalRoutes);
 
 app.get("/api/health", (req, res) => {
   res.json({

@@ -1,11 +1,17 @@
 import { useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { Eye, EyeOff, Recycle, LoaderCircle } from "lucide-react";
+import AccountTypeSwitch from "../components/AccountTypeSwitch";
 import { apiRequest } from "../services/api";
 import "./Login.css";
 
 function Register() {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const initialAccountType = searchParams.get("accountType") === "organization"
+    ? "organization"
+    : "individual";
+  const [accountType, setAccountType] = useState(initialAccountType);
 
   const [form, setForm] = useState({
     name: "",
@@ -13,6 +19,10 @@ function Register() {
     phone: "",
     password: "",
     confirmPassword: "",
+    organizationName: "",
+    organizationType: "",
+    licenseNumber: "",
+    contactEmail: "",
   });
 
   const [showPassword, setShowPassword] = useState(false);
@@ -49,19 +59,41 @@ function Register() {
       setError("Passwords do not match.");
       return;
     }
+    if (
+      accountType === "organization" &&
+      (!form.organizationName.trim() ||
+        !form.organizationType ||
+        !form.licenseNumber.trim() ||
+        !form.contactEmail.trim())
+    ) {
+      setError("Complete all required organization details.");
+      return;
+    }
 
     setLoading(true);
 
     try {
-      const data = await apiRequest("/auth/register", {
-        method: "POST",
-        body: JSON.stringify({
-          name: form.name.trim(),
-          email: form.email.trim().toLowerCase(),
-          password: form.password,
-          ...(form.phone.trim() ? { phone: form.phone.trim() } : {}),
-        }),
-      });
+      const isOrganization = accountType === "organization";
+      const data = await apiRequest(
+        isOrganization ? "/auth/register-organization" : "/auth/register",
+        {
+          method: "POST",
+          body: JSON.stringify({
+            name: form.name.trim(),
+            email: form.email.trim().toLowerCase(),
+            password: form.password,
+            ...(form.phone.trim() ? { phone: form.phone.trim() } : {}),
+            ...(isOrganization
+              ? {
+                  organizationName: form.organizationName.trim(),
+                  organizationType: form.organizationType,
+                  licenseNumber: form.licenseNumber.trim(),
+                  contactEmail: form.contactEmail.trim().toLowerCase(),
+                }
+              : {}),
+          }),
+        }
+      );
 
       if (!data.token) {
         throw new Error("Account created, but no authentication token was returned.");
@@ -113,9 +145,11 @@ function Register() {
 
           <div className="login-heading">
             <p className="login-eyebrow">GET STARTED</p>
-            <h2>Create your account</h2>
-            <p>Enter your details to get started.</p>
+            <h2>{accountType === "organization" ? "Register your organization" : "Create your account"}</h2>
+            <p>{accountType === "organization" ? "Create an organization workspace and its first linked account." : "Enter your details to get started."}</p>
           </div>
+
+          <AccountTypeSwitch value={accountType} onChange={(value) => { setAccountType(value); setError(""); }} />
 
           <form className="login-form register-form" onSubmit={handleSubmit}>
             <div className="login-field">
@@ -158,6 +192,62 @@ function Register() {
                 onChange={handleChange}
               />
             </div>
+
+            {accountType === "organization" && (
+              <>
+                <div className="account-type-note">
+                  Organization registration creates the organization record and links your account to it. License details are submitted as provided; they are not independently verified during signup.
+                </div>
+                <div className="login-field">
+                  <label htmlFor="organizationName">Organization name *</label>
+                  <input
+                    id="organizationName"
+                    name="organizationName"
+                    autoComplete="organization"
+                    value={form.organizationName}
+                    onChange={handleChange}
+                    required
+                  />
+                </div>
+                <div className="login-field">
+                  <label htmlFor="organizationType">Organization type *</label>
+                  <select
+                    id="organizationType"
+                    name="organizationType"
+                    value={form.organizationType}
+                    onChange={handleChange}
+                    required
+                  >
+                    <option value="">Select organization type</option>
+                    <option value="COLLECTION_CENTER">Collection center</option>
+                    <option value="TRANSPORT_COMPANY">Transport company</option>
+                    <option value="RECYCLING_FACILITY">Recycling facility</option>
+                  </select>
+                </div>
+                <div className="login-field">
+                  <label htmlFor="licenseNumber">License / registration number *</label>
+                  <input
+                    id="licenseNumber"
+                    name="licenseNumber"
+                    value={form.licenseNumber}
+                    onChange={handleChange}
+                    required
+                  />
+                </div>
+                <div className="login-field">
+                  <label htmlFor="contactEmail">Organization contact email *</label>
+                  <input
+                    id="contactEmail"
+                    name="contactEmail"
+                    type="email"
+                    autoComplete="email"
+                    value={form.contactEmail}
+                    onChange={handleChange}
+                    required
+                  />
+                </div>
+              </>
+            )}
 
             <div className="login-field">
               <label htmlFor="password">Password *</label>
@@ -233,13 +323,13 @@ function Register() {
                   Creating account...
                 </>
               ) : (
-                "Create account"
+                accountType === "organization" ? "Create organization account" : "Create account"
               )}
             </button>
           </form>
 
           <p className="login-register-prompt">
-            Already have an account? <Link to="/login">Sign in</Link>
+            Already have an account? <Link to={`/login?accountType=${accountType}`}>Sign in</Link>
           </p>
         </div>
       </section>

@@ -1,6 +1,6 @@
 const crypto = require("crypto");
 
-const createEventWithLedger = async (tx, eventData) => {
+const createEventWithLedger = async (tx, eventData, options = {}) => {
   const { deviceId } = eventData;
 
   // Serialize ledger updates for this device to prevent competing
@@ -10,8 +10,15 @@ await tx.$queryRaw`
 `;
   // Create the event.
   const event = await tx.event.create({
-    data: eventData,
+    data: {
+      ...eventData,
+      payloadVersion: options.createDetails ? 2 : 1,
+    },
   });
+
+  const details = options.createDetails
+    ? await options.createDetails(tx, event)
+    : null;
 
   // Find the latest entry in this device's ledger chain.
   const previousEntry = await tx.ledgerEntry.findFirst({
@@ -37,6 +44,9 @@ await tx.$queryRaw`
     createdAt: event.createdAt.toISOString(),
     previousHash,
   };
+  if (event.payloadVersion === 2) {
+    eventPayload.details = details;
+  }
 
   // Calculate the SHA-256 hash.
   const currentHash = crypto
@@ -55,7 +65,7 @@ await tx.$queryRaw`
     },
   });
 
-  return { event, ledgerEntry };
+  return { event, ledgerEntry, details };
 };
 
 const verifyDeviceLedger = async (prisma, deviceId) => {
@@ -80,7 +90,20 @@ const verifyDeviceLedger = async (prisma, deviceId) => {
     }),
     prisma.ledgerEntry.findMany({
       where: { deviceId },
-      include: { event: true },
+      include: {
+        event: {
+          include: {
+            recoveryOperation: {
+              include: {
+                materials: {
+                  include: { material: { select: { name: true } } },
+                },
+              },
+            },
+            disposalRecord: true,
+          },
+        },
+      },
     }),
   ]);
 
@@ -185,6 +208,61 @@ const verifyDeviceLedger = async (prisma, deviceId) => {
         createdAt: current.event.createdAt.toISOString(),
         previousHash: current.previousHash,
       };
+
+      if (current.event.payloadVersion === 2) {
+        if (current.event.eventType === "MATERIAL_RECOVERY") {
+          const materials =
+            current.event.recoveryOperation?.materials
+              .map((material) => ({
+                materialType: material.material.name,
+                quantity: Number(material.quantity),
+                unit: material.unit,
+                condition: material.condition,
+              }))
+              .sort((a, b) =>
+                JSON.stringify(a).localeCompare(JSON.stringify(b))
+              ) ?? null;
+          const recovery = current.event.recoveryOperation;
+          eventPayload.details =
+            recovery && materials
+              ? {
+                  recovery: {
+                    id: recovery.id,
+                    deviceId: recovery.deviceId,
+                    organizationId: recovery.organizationId,
+                    performedBy: recovery.performedBy,
+                    recoveredAt: recovery.recoveredAt.toISOString(),
+                    remarks: recovery.remarks,
+                  },
+                  materials,
+                }
+              : null;
+        } else if (current.event.eventType === "DISPOSAL") {
+          const disposal = current.event.disposalRecord;
+          eventPayload.details = disposal
+            ? {
+                disposal: {
+                  id: disposal.id,
+                  wasteDescription: disposal.wasteDescription,
+                  disposalMethod: disposal.disposalMethod,
+                  disposalDate: disposal.disposalDate.toISOString(),
+                  quantity:
+                    disposal.quantity === null
+                      ? null
+                      : Number(disposal.quantity),
+                  unit: disposal.unit,
+                  hazardous: disposal.hazardous,
+                  facilityName: disposal.facilityName,
+                  deviceId: disposal.deviceId,
+                  organizationId: disposal.organizationId,
+                  performedBy: disposal.performedBy,
+                },
+              }
+            : null;
+        } else {
+          eventPayload.details = null;
+        }
+      }
 
       const calculatedHash = crypto
         .createHash("sha256")

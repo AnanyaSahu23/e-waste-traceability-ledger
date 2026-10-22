@@ -68,6 +68,12 @@ enum TransferStatus {
   ACCEPTED
 }
 
+enum MaterialCondition {
+  REUSABLE
+  RECYCLABLE
+  OTHER
+}
+
 // =====================================================
 // USER
 // =====================================================
@@ -85,6 +91,9 @@ model User {
 
   // Events performed by this user
   events Event[]
+
+  recoveryOperations MaterialRecoveryOperation[] @relation("RecoveryPerformer")
+  disposalRecords    DisposalRecord[]  @relation("DisposalPerformer")
 
   // Custody transfers requested by this user
   requestedTransfers CustodyTransfer[] @relation("TransferRequester")
@@ -125,6 +134,9 @@ model Organization {
 
   // Events where this organization is receiver
   incomingEvents Event[] @relation("EventToOrganization")
+
+  recoveryOperations MaterialRecoveryOperation[] @relation("RecoveryOrganization")
+  disposalRecords    DisposalRecord[]  @relation("DisposalOrganization")
 
   // Custody transfers leaving this organization
   outgoingTransfers CustodyTransfer[] @relation("TransferFromOrganization")
@@ -189,6 +201,9 @@ model Device {
 
   // Lifecycle events
   events Event[]
+
+  recoveryOperations MaterialRecoveryOperation[]
+  disposalRecords    DisposalRecord[]
 
   // Ledger chain for this device
   ledgerEntries LedgerEntry[]
@@ -282,6 +297,7 @@ model Event {
 
   remarks String?
 
+  payloadVersion Int      @default(1)
   createdAt DateTime @default(now())
 
   device Device @relation(fields: [deviceId], references: [id])
@@ -294,8 +310,8 @@ model Event {
 
   toOrganization Organization? @relation("EventToOrganization", fields: [toOrganizationId], references: [id])
 
-  // One event can have multiple recovered materials
-  materialRecoveries MaterialRecovery[]
+  recoveryOperation MaterialRecoveryOperation?
+  materialRecoveries RecoveredMaterial[]
 
   // Disposal event has one disposal record
   disposalRecord DisposalRecord?
@@ -351,31 +367,59 @@ model Material {
 
   name String @unique
 
-  recoveries MaterialRecovery[]
+  recoveredMaterials RecoveredMaterial[]
 }
 
 // =====================================================
-// MATERIAL RECOVERY
+// MATERIAL RECOVERY OPERATION
 // =====================================================
 
-model MaterialRecovery {
+model MaterialRecoveryOperation {
   id String @id @default(uuid()) @db.Uuid
 
-  eventId    String @db.Uuid
-  materialId String @db.Uuid
+  eventId        String   @unique @db.Uuid
+  deviceId       String   @db.Uuid
+  organizationId String?  @db.Uuid
+  performedBy    String   @db.Uuid
+  idempotencyKey String?  @unique @db.Uuid
+  requestHash    String?
+  recoveredAt    DateTime @default(now())
+  remarks        String?
 
-  quantity Decimal @db.Decimal(10, 3)
+  event        Event         @relation(fields: [eventId], references: [id])
+  device       Device        @relation(fields: [deviceId], references: [id])
+  organization Organization? @relation("RecoveryOrganization", fields: [organizationId], references: [id], onDelete: SetNull)
+  performer    User          @relation("RecoveryPerformer", fields: [performedBy], references: [id])
+  materials    RecoveredMaterial[]
 
-  unit String
+  @@index([deviceId, recoveredAt])
+  @@index([organizationId])
+  @@index([performedBy])
+}
 
+// =====================================================
+// RECOVERED MATERIAL
+// =====================================================
+
+model RecoveredMaterial {
+  id         String           @id(map: "MaterialRecovery_pkey") @default(uuid()) @db.Uuid
+  recoveryId String           @db.Uuid
+  eventId    String           @db.Uuid
+  materialId String           @db.Uuid
+  quantity   Decimal          @db.Decimal(10, 3)
+  unit       String
+  condition  MaterialCondition @default(RECYCLABLE)
   createdAt DateTime @default(now())
 
-  event Event @relation(fields: [eventId], references: [id])
+  recovery MaterialRecoveryOperation @relation(fields: [recoveryId], references: [id], map: "RecoveredMaterial_recoveryId_fkey")
+  event    Event                    @relation(fields: [eventId], references: [id], map: "MaterialRecovery_eventId_fkey")
+  material Material                 @relation(fields: [materialId], references: [id], map: "MaterialRecovery_materialId_fkey")
 
-  material Material @relation(fields: [materialId], references: [id])
+  @@index([recoveryId], map: "RecoveredMaterial_recoveryId_idx")
+  @@index([eventId], map: "MaterialRecovery_eventId_idx")
+  @@index([materialId], map: "MaterialRecovery_materialId_idx")
 
-  @@index([eventId])
-  @@index([materialId])
+  @@map("MaterialRecovery")
 }
 
 // =====================================================
@@ -387,14 +431,28 @@ model DisposalRecord {
 
   eventId String @unique @db.Uuid
 
-  wasteType      String
+  deviceId       String   @db.Uuid
+  organizationId String?  @db.Uuid
+  performedBy    String   @db.Uuid
+  idempotencyKey String?  @unique @db.Uuid
+  requestHash    String?
+  wasteDescription String @map("wasteType")
   disposalMethod String
+  quantity       Decimal? @db.Decimal(10, 3)
+  unit           String?
+  facilityName   String?
+  hazardous      Boolean  @default(false)
+  disposalDate   DateTime
 
-  disposalDate DateTime
-
-  event Event @relation(fields: [eventId], references: [id])
+  event        Event         @relation(fields: [eventId], references: [id])
+  device       Device        @relation(fields: [deviceId], references: [id])
+  organization Organization? @relation("DisposalOrganization", fields: [organizationId], references: [id], onDelete: SetNull)
+  performer    User          @relation("DisposalPerformer", fields: [performedBy], references: [id])
 
   @@index([eventId])
+  @@index([deviceId, disposalDate])
+  @@index([organizationId])
+  @@index([performedBy])
 }
 
 // =====================================================
